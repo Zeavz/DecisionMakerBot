@@ -4,7 +4,6 @@ using Discord.Commands;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace RandomBot
@@ -35,16 +34,33 @@ namespace RandomBot
             commands.CreateCommand("rand").Do(async (e) =>
             {
                 await e.Channel.SendMessage("use #[option] to add an option");
+                list.Clear();
                 running = true;
             });
 
             commands.CreateCommand("end").Do(async (e) =>
             {
-                Random rnd = new Random();
-                int choice = rnd.Next(0, choices);
-                string chosenChoice = list[choice];
-                running = false;
-                await e.Channel.SendMessage(chosenChoice);
+                if (running)
+                {
+                    string chosenChoice;
+                    if (!list.Any())
+                    {
+                        chosenChoice = "You must enter options for me to chose from";
+                    }
+                    else
+                    {
+                        Random rnd = new Random();
+                        int choice = rnd.Next(0, choices);
+                        chosenChoice = list[choice];
+                        list.Clear();
+                    }
+                    running = false;
+                    await e.Channel.SendMessage(chosenChoice);
+                }
+                else
+                {
+                    await e.Channel.SendMessage("Start the command with !rand");
+                }
             });
 
             discord.MessageReceived += async (s, e) =>
@@ -60,11 +76,15 @@ namespace RandomBot
                             counter++;
                         }
                         string newMessage = message.Substring(counter + 1);
-                        if (newMessage.Length > 1)
+
+                        if (newMessage.Length < 1)
+                        {
+                            await e.Channel.SendMessage("Empty option inserted, was not added to list");
+                        }
+                        else
                         {
                             list.Add(newMessage);
                             choices++;
-                            await e.Channel.SendMessage(newMessage);
                         }
                     }
                 }
